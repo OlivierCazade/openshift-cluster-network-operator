@@ -1034,11 +1034,19 @@ var (
 					enable(inDevPreviewNoUpgrade(), inTechPreviewNoUpgrade()).
 					mustRegister()
 
+	FeatureGateTLSAdherence = newFeatureGate("TLSAdherence").
+				reportProblemsToJiraComponent("HPCASE / TLS Adherence").
+				contactPerson("joelanford").
+				productScope(ocpSpecific).
+				enhancementPR("https://github.com/openshift/enhancements/pull/1910").
+				enable(inDevPreviewNoUpgrade(), inTechPreviewNoUpgrade()).
+				mustRegister()
+
 	FeatureGateNetworkObservabilityInstall = newFeatureGate("NetworkObservabilityInstall").
 						reportProblemsToJiraComponent("netobserv").
 						contactPerson("jtakvori").
 						productScope(ocpSpecific).
 						enhancementPR("https://github.com/openshift/enhancements/pull/1908").
-						enableIn(configv1.DevPreviewNoUpgrade, configv1.TechPreviewNoUpgrade).
+						enable(inDevPreviewNoUpgrade(), inTechPreviewNoUpgrade()).
 						mustRegister()
 )
