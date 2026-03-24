@@ -407,8 +407,9 @@ func TestReconcile_InstallsWhenNil(t *testing.T) {
 		},
 	}
 	infra := createTestInfrastructure(configv1.HighlyAvailableTopologyMode)
+	operatorNs := createTestNamespace(OperatorNamespace)
 
-	client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(network, infra).Build()
+	client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(network, infra, operatorNs).Build()
 
 	r := &ReconcileObservability{
 		client: client,
@@ -422,12 +423,6 @@ func TestReconcile_InstallsWhenNil(t *testing.T) {
 	// This will fail because the manifest doesn't exist, which proves it tried to install
 	g.Expect(err).To(HaveOccurred())
 	g.Expect(err.Error()).To(ContainSubstring("failed to read"))
-
-	// Verify that the operator namespace was created despite the error
-	ns := &corev1.Namespace{}
-	nsErr := client.Get(context.TODO(), types.NamespacedName{Name: OperatorNamespace}, ns)
-	g.Expect(nsErr).NotTo(HaveOccurred())
-	g.Expect(ns.Name).To(Equal(OperatorNamespace))
 }
 
 func TestReconcile_SkipsInstallWhenNilOnSNO(t *testing.T) {
@@ -1115,12 +1110,6 @@ func TestReconcile_PartialFailure_OperatorInstallFails(t *testing.T) {
 
 	// Should fail at operator installation
 	g.Expect(err).To(HaveOccurred())
-
-	// Verify that namespace was created despite operator install failure
-	ns := &corev1.Namespace{}
-	nsErr := client.Get(context.TODO(), types.NamespacedName{Name: OperatorNamespace}, ns)
-	g.Expect(nsErr).NotTo(HaveOccurred())
-	g.Expect(ns.Name).To(Equal(OperatorNamespace))
 }
 
 // TestReconcile_RecoveryAfterOperatorBecomesReady tests that reconciliation
@@ -1171,71 +1160,6 @@ func TestReconcile_RecoveryAfterOperatorBecomesReady(t *testing.T) {
 	// Should fail trying to read FlowCollector manifest
 	g.Expect(err2).To(HaveOccurred())
 	g.Expect(err2.Error()).To(ContainSubstring("failed to read"))
-}
-
-// TestReconcile_NamespaceCreation tests namespace creation logic
-func TestReconcile_NamespaceCreation(t *testing.T) {
-	g := NewGomegaWithT(t)
-
-	scheme := runtime.NewScheme()
-	_ = configv1.AddToScheme(scheme)
-	_ = corev1.AddToScheme(scheme)
-
-	network := createTestNetwork("cluster", "InstallAndEnable")
-
-	client := fake.NewClientBuilder().WithScheme(scheme).
-		WithObjects(network).
-		Build()
-
-	r := &ReconcileObservability{
-		client: client,
-		status: newMockStatusManager(),
-	}
-
-	req := ctrl.Request{NamespacedName: types.NamespacedName{Name: "cluster"}}
-
-	// Reconciliation will fail, but should create the operator namespace first
-	_, _ = r.Reconcile(context.TODO(), req)
-
-	// Verify operator namespace was created
-	ns := &corev1.Namespace{}
-	err := client.Get(context.TODO(), types.NamespacedName{Name: OperatorNamespace}, ns)
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(ns.Name).To(Equal(OperatorNamespace))
-}
-
-// TestReconcile_NamespaceAlreadyExists tests that reconciliation
-// handles pre-existing namespaces gracefully
-func TestReconcile_NamespaceAlreadyExists(t *testing.T) {
-	g := NewGomegaWithT(t)
-
-	scheme := runtime.NewScheme()
-	_ = configv1.AddToScheme(scheme)
-	_ = corev1.AddToScheme(scheme)
-
-	network := createTestNetwork("cluster", "InstallAndEnable")
-	// Namespace already exists
-	operatorNs := createTestNamespace(OperatorNamespace)
-
-	client := fake.NewClientBuilder().WithScheme(scheme).
-		WithObjects(network, operatorNs).
-		Build()
-
-	r := &ReconcileObservability{
-		client: client,
-		status: newMockStatusManager(),
-	}
-
-	req := ctrl.Request{NamespacedName: types.NamespacedName{Name: "cluster"}}
-
-	// Reconciliation should handle existing namespace gracefully
-	_, _ = r.Reconcile(context.TODO(), req)
-
-	// Verify namespace still exists
-	ns := &corev1.Namespace{}
-	err := client.Get(context.TODO(), types.NamespacedName{Name: OperatorNamespace}, ns)
-	g.Expect(err).NotTo(HaveOccurred())
-	g.Expect(ns.Name).To(Equal(OperatorNamespace))
 }
 
 // Performance/Stress Tests

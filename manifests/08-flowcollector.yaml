@@ -6,10 +6,10 @@ spec:
   agent:
     ebpf:
       features:
-        - PacketDrop
+        - DNSTracking
       sampling: 400
     type: eBPF
-  deploymentModel: Direct
+  deploymentModel: Service
   loki:
     enable: false
   namespace: netobserv

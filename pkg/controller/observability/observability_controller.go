@@ -88,7 +88,7 @@ type ReconcileObservability struct {
 func (r *ReconcileObservability) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	klog.Info("Reconcile Network Observability")
 
-	if req.Name != "cluster" {
+	if req.Name != FlowCollectorName {
 		return ctrl.Result{}, nil // only reconcile the singleton Network object
 	}
 
@@ -102,7 +102,7 @@ func (r *ReconcileObservability) Reconcile(ctx context.Context, req ctrl.Request
 
 	// Get Network CR information
 	var network configv1.Network
-	if err := r.client.Get(ctx, types.NamespacedName{Name: "cluster"}, &network); err != nil {
+	if err := r.client.Get(ctx, types.NamespacedName{Name: FlowCollectorName}, &network); err != nil {
 		return ctrl.Result{}, crclient.IgnoreNotFound(err)
 	}
 
@@ -132,20 +132,6 @@ func (r *ReconcileObservability) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, err
 	}
 	if !installed {
-		// Create namespace if it doesn't exist
-		ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: OperatorNamespace}}
-		if err := r.client.Get(ctx, types.NamespacedName{Name: OperatorNamespace}, ns); err != nil {
-			if errors.IsNotFound(err) {
-				if err := r.client.Create(ctx, ns); err != nil {
-					r.status.SetDegraded(statusmanager.ObservabilityConfig, "CreateNamespaceError", fmt.Sprintf("Failed to create namespace %s: %v", OperatorNamespace, err))
-					return ctrl.Result{}, err
-				}
-			} else {
-				r.status.SetDegraded(statusmanager.ObservabilityConfig, "GetNamespaceError", fmt.Sprintf("Failed to get namespace %s: %v", OperatorNamespace, err))
-				return ctrl.Result{}, err
-			}
-		}
-
 		// Install Network Observability Operator
 		if err := r.installNetObservOperator(ctx); err != nil {
 			r.status.SetDegraded(statusmanager.ObservabilityConfig, "InstallOperatorError", fmt.Sprintf("Failed to install Network Observability Operator: %v", err))
