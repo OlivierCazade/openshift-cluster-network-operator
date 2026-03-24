@@ -109,11 +109,11 @@ func (r *ReconcileObservability) Reconcile(ctx context.Context, req ctrl.Request
 	// Check if Network Observability should be enabled
 	shouldInstall, err := r.shouldInstallNetworkObservability(ctx, &network)
 	if err != nil {
-		r.status.SetDegraded(statusmanager.ObservabilityConfig, "CheckInstallError", fmt.Sprintf("Failed to determine if Network Observability should be installed: %v", err))
+		// r.status.SetDegraded(statusmanager.ObservabilityConfig, "CheckInstallError", fmt.Sprintf("Failed to determine if Network Observability should be installed: %v", err))
 		return ctrl.Result{}, err
 	}
 	if !shouldInstall {
-		r.status.SetNotDegraded(statusmanager.ObservabilityConfig)
+		// r.status.SetNotDegraded(statusmanager.ObservabilityConfig)
 		return ctrl.Result{}, nil
 	}
 
@@ -121,20 +121,20 @@ func (r *ReconcileObservability) Reconcile(ctx context.Context, req ctrl.Request
 	// If so, we're done - no need to check or manage anything
 	if r.wasNetworkObservabilityDeployed(&network) {
 		klog.Info("Network Observability was previously deployed, skipping reconciliation.")
-		r.status.SetNotDegraded(statusmanager.ObservabilityConfig)
+		// r.status.SetNotDegraded(statusmanager.ObservabilityConfig)
 		return ctrl.Result{}, nil
 	}
 
 	// First time installation - proceed with operator installation
 	installed, err := r.isNetObservOperatorInstalled(ctx)
 	if err != nil {
-		r.status.SetDegraded(statusmanager.ObservabilityConfig, "CheckOperatorError", fmt.Sprintf("Failed to check if Network Observability Operator is installed: %v", err))
+		// r.status.SetDegraded(statusmanager.ObservabilityConfig, "CheckOperatorError", fmt.Sprintf("Failed to check if Network Observability Operator is installed: %v", err))
 		return ctrl.Result{}, err
 	}
 	if !installed {
 		// Install Network Observability Operator
 		if err := r.installNetObservOperator(ctx); err != nil {
-			r.status.SetDegraded(statusmanager.ObservabilityConfig, "InstallOperatorError", fmt.Sprintf("Failed to install Network Observability Operator: %v", err))
+			// r.status.SetDegraded(statusmanager.ObservabilityConfig, "InstallOperatorError", fmt.Sprintf("Failed to install Network Observability Operator: %v", err))
 			return ctrl.Result{}, err
 		}
 	}
@@ -144,31 +144,31 @@ func (r *ReconcileObservability) Reconcile(ctx context.Context, req ctrl.Request
 	if err := r.waitForNetObservOperator(ctx); err != nil {
 		if err == context.DeadlineExceeded {
 			klog.Errorf("Timed out waiting for Network Observability Operator to be ready after %v. Will retry in %v.", checkTimeout, requeueAfter)
-			r.status.SetDegraded(statusmanager.ObservabilityConfig, "OperatorNotReady", fmt.Sprintf("Timed out waiting for Network Observability Operator to be ready after %v", checkTimeout))
+			// r.status.SetDegraded(statusmanager.ObservabilityConfig, "OperatorNotReady", fmt.Sprintf("Timed out waiting for Network Observability Operator to be ready after %v", checkTimeout))
 			return ctrl.Result{RequeueAfter: requeueAfter}, nil
 		}
-		r.status.SetDegraded(statusmanager.ObservabilityConfig, "WaitOperatorError", fmt.Sprintf("Failed waiting for Network Observability Operator: %v", err))
+		// r.status.SetDegraded(statusmanager.ObservabilityConfig, "WaitOperatorError", fmt.Sprintf("Failed waiting for Network Observability Operator: %v", err))
 		return ctrl.Result{}, err
 	}
 
 	// Check if FlowCollector already exists
 	flowCollectorExists, err := r.isFlowCollectorExists(ctx)
 	if err != nil {
-		r.status.SetDegraded(statusmanager.ObservabilityConfig, "CheckFlowCollectorError", fmt.Sprintf("Failed to check if FlowCollector exists: %v", err))
+		// r.status.SetDegraded(statusmanager.ObservabilityConfig, "CheckFlowCollectorError", fmt.Sprintf("Failed to check if FlowCollector exists: %v", err))
 		return ctrl.Result{}, err
 	}
 
 	if !flowCollectorExists {
 		// Create FlowCollector (first time deployment)
 		if err := r.createFlowCollector(ctx); err != nil {
-			r.status.SetDegraded(statusmanager.ObservabilityConfig, "CreateFlowCollectorError", fmt.Sprintf("Failed to create FlowCollector: %v", err))
+			// r.status.SetDegraded(statusmanager.ObservabilityConfig, "CreateFlowCollectorError", fmt.Sprintf("Failed to create FlowCollector: %v", err))
 			return ctrl.Result{}, err
 		}
 	}
 
 	// Mark as deployed in Network CR status
 	if err := r.markNetworkObservabilityDeployed(ctx, &network); err != nil {
-		r.status.SetDegraded(statusmanager.ObservabilityConfig, "UpdateStatusError", fmt.Sprintf("Failed to update Network Observability deployment status: %v", err))
+		// r.status.SetDegraded(statusmanager.ObservabilityConfig, "UpdateStatusError", fmt.Sprintf("Failed to update Network Observability deployment status: %v", err))
 		return ctrl.Result{}, err
 	}
 
