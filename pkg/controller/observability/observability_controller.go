@@ -330,7 +330,7 @@ func (r *ReconcileObservability) waitForNetObservOperator(ctx context.Context) e
 		for _, csv := range csvs.Items {
 			name := csv.GetName()
 			// CSV names are typically like "netobserv-operator.v1.2.3"
-			if strings.HasPrefix(name, "netobserv-operator") {
+			if strings.HasPrefix(name, "network-observability-operator") {
 				phase, found, err := unstructured.NestedString(csv.Object, "status", "phase")
 				if err != nil {
 					return false, err
